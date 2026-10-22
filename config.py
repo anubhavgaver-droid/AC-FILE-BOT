@@ -41,7 +41,7 @@ def get_config() -> Config:
         owner_ids=_ids(os.environ["OWNER_IDS"]),
         db_channel_id=int(os.environ["DB_CHANNEL_ID"]),
         mongo_uri=os.environ["MONGO_URI"].strip(),
-        mongo_db_name=os.getenv("MONGO_DB_NAME", "filestore").strip() or "filestore",
+        mongo_db_name=os.getenv("MONGO_DB_NAME", "filestoreeeexx").strip() or "filestore",
         shortener_url=os.getenv("SHORTENER_API_URL", "").strip(),
         shortener_key=os.getenv("SHORTENER_API_KEY", "").strip(),
         port=int(os.getenv("PORT", "0") or 0),
