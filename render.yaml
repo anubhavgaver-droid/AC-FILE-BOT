@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: advanced-filestore-bot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: BOT_TOKEN
+        sync: false
+      - key: OWNER_IDS
+        sync: false
+      - key: DB_CHANNEL_ID
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        value: filestore
