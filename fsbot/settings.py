@@ -26,9 +26,11 @@ SPEC: dict[str, Spec] = {
     "link_window_hours": Spec("24", "float", 0.1, 720, "Window (hours) used by link_limit"),
     "token_expiry_minutes": Spec("15", "int", 1, 1440, "Minutes before an unused verification link expires"),
     "verify_min_seconds": Spec("8", "int", 0, 600, "Minimum seconds to finish a link (anti-bypass)"),
-    "auto_delete_seconds": Spec("600", "int", 0, 86400, "Delete delivered files after N seconds (0 = keep)"),
+    "auto_delete_seconds": Spec("600", "int", 0, 604800, "Delete delivered files after N seconds (0 = keep)"),
     "protect_content": Spec("0", "bool", desc="Block forwarding / saving of delivered files (1/0)"),
     "fsub_auto_approve": Spec("0", "bool", desc="Auto-approve join requests of force-sub channels (1/0)"),
+    "link_expiry_hours": Spec("0", "float", 0, 8760, "Links stop working N hours after creation (0 = never)"),
+    "maintenance": Spec("0", "bool", desc="Maintenance mode: only admins can use the bot (1/0)"),
 }
 
 _cache: dict[str, Any] = {}

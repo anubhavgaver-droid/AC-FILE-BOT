@@ -68,3 +68,34 @@ async def build_invite_link(bot, chat, mode: str) -> str:
         return f"https://t.me/{chat.username}"
     invite = await bot.create_chat_invite_link(chat.id, name="FileStore", creates_join_request=(mode == "request"))
     return invite.invite_link
+
+
+async def register_channel(bot, chat_id: int, mode: str = "auto"):
+    """Validate a channel and store it for force-subscribe. Returns (row, None) or (None, error_text)."""
+    try:
+        chat = await bot.get_chat(chat_id)
+        me = await bot.get_chat_member(chat_id, bot.id)
+    except TelegramError as exc:
+        return None, f"Cannot access that channel: {exc}. Add the bot as admin and try again."
+    if me.status not in {"administrator", "creator"}:
+        return None, "Make the bot an administrator of that channel first, then try again."
+    if mode == "auto":
+        mode = "direct" if chat.username else "request"
+    try:
+        link = await build_invite_link(bot, chat, mode)
+    except TelegramError as exc:
+        return None, f"Could not create an invite link: {exc}. Give the bot the “Invite users via link” admin right."
+    title = chat.title or str(chat.id)
+    await get_db().add_fsub(chat.id, title, mode, link)
+    return {"chat_id": chat.id, "title": title, "mode": mode, "link": link}, None
+
+
+async def set_mode(bot, channel, mode: str):
+    """Change a channel's mode (or re-create its link with the same mode). Returns (ok, error_text)."""
+    try:
+        chat = await bot.get_chat(channel["chat_id"])
+        link = await build_invite_link(bot, chat, mode)
+    except TelegramError as exc:
+        return False, str(exc)
+    await get_db().add_fsub(channel["chat_id"], channel["title"], mode, link)
+    return True, None

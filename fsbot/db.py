@@ -26,7 +26,8 @@ class Database:
 
     # ---------------------------------------------------------- settings
     async def all_settings(self) -> dict:
-        return {d["_id"]: d["value"] async for d in self.db.settings.find({})}
+        # Skip documents without a "value" field (e.g. left over by another bot in a shared database).
+        return {d["_id"]: d["value"] async for d in self.db.settings.find({}) if "value" in d}
 
     async def set_setting(self, key: str, value) -> None:
         await self.db.settings.update_one({"_id": key}, {"$set": {"value": value}}, upsert=True)
