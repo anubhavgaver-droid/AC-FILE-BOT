@@ -5,11 +5,13 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import TelegramError
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, filters
 
-from fsbot import fsub, messages, verify
+from fsbot import admins, fsub, messages, settings, verify
 from fsbot.db import get_db
 from fsbot.delivery import send_items
 from fsbot.encode import decode
-from fsbot.utils import h
+from fsbot.utils import h, now
+
+MAINTENANCE_TEXT = "🚧 <b>Under maintenance</b>\n\nThe bot is being updated. Please try again in a little while."
 
 HELP_TEXT = (
     "ℹ️ <b>Help</b>\n\n"
@@ -34,6 +36,11 @@ async def _serve(update: Update, context: ContextTypes.DEFAULT_TYPE, payload: st
     link = await get_db().get_link(key)
     if not link:
         await chat.send_message("❌ This link is invalid or has been removed.")
+        return
+
+    expiry = settings.get("link_expiry_hours")
+    if expiry > 0 and now() > int(link.get("created_at") or 0) + expiry * 3600:
+        await chat.send_message("⌛ This link has expired.")
         return
 
     username = context.bot_data["username"]
@@ -80,6 +87,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await db.upsert_user(user.id, user.first_name or "", user.username)
     if await db.is_banned(user.id):
         return
+    if settings.get("maintenance") and not admins.is_admin(user.id):
+        await chat.send_message(MAINTENANCE_TEXT, parse_mode="HTML")
+        return
 
     if not context.args:
         await messages.send(chat, "welcome", reply_markup=_menu(), name=h(user.first_name or "there"))
@@ -104,6 +114,9 @@ async def menu_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     user, chat = query.from_user, update.effective_chat
     if await get_db().is_banned(user.id):
         return
+    if settings.get("maintenance") and not admins.is_admin(user.id):
+        await chat.send_message(MAINTENANCE_TEXT, parse_mode="HTML")
+        return
     action = query.data.partition(":")[2]
     if action == "status":
         await chat.send_message(await verify.status_text(user.id), parse_mode="HTML")
@@ -117,6 +130,9 @@ async def fsub_retry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     user = query.from_user
     if await get_db().is_banned(user.id):
         await query.answer()
+        return
+    if settings.get("maintenance") and not admins.is_admin(user.id):
+        await query.answer("🚧 The bot is under maintenance. Please try again later.", show_alert=True)
         return
     payload = query.data.partition(":")[2]
     decoded = decode(payload)

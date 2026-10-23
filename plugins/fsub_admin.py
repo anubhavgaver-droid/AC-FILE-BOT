@@ -66,30 +66,13 @@ async def receive_channel(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if chat_id is None:
         await msg.reply_text("❌ Forward a post from the channel (not from a user), or send its numeric ID.")
         return WAIT
-    try:
-        chat = await context.bot.get_chat(chat_id)
-        me = await context.bot.get_chat_member(chat_id, context.bot.id)
-    except TelegramError as exc:
-        await msg.reply_text(f"❌ Cannot access that channel: {exc}\nAdd the bot as admin and try again, or /cancel.")
-        return WAIT
-    if me.status not in {"administrator", "creator"}:
-        await msg.reply_text("❌ Make the bot an administrator of that channel first, then forward a post again.")
-        return WAIT
-
     mode = context.user_data.pop("fsub_mode", "auto")
-    if mode == "auto":
-        mode = "direct" if chat.username else "request"
-    try:
-        link = await fsub.build_invite_link(context.bot, chat, mode)
-    except TelegramError as exc:
-        await msg.reply_text(
-            f"❌ Could not create an invite link: {exc}\nGive the bot the “Invite users via link” admin right and retry."
-        )
-        return ConversationHandler.END
-    title = chat.title or str(chat.id)
-    await get_db().add_fsub(chat.id, title, mode, link)
-    kind = "join-request link (a request is enough)" if mode == "request" else "direct join button"
-    await msg.reply_html(f"✅ <b>{h(title)}</b> added.\nMode: <b>{kind}</b>")
+    channel, error = await fsub.register_channel(context.bot, chat_id, mode)
+    if error:
+        await msg.reply_text(f"❌ {error}")
+        return WAIT
+    kind = "join-request link (a request is enough)" if channel["mode"] == "request" else "direct join button"
+    await msg.reply_html(f"✅ <b>{h(channel['title'])}</b> added.\nMode: <b>{kind}</b>")
     return ConversationHandler.END
 
 

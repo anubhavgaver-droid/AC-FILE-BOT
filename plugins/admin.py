@@ -1,4 +1,4 @@
-"""Admin tools: /adminhelp, /settings, /set, /stats, /ban, /unban, /addadmin, /deladmin, /admins, /revoke."""
+"""Admin tools: /adminhelp, /set, /stats, /ban, /unban, /addadmin, /deladmin, /admins, /revoke."""
 from __future__ import annotations
 
 from telegram import Update
@@ -7,6 +7,7 @@ from telegram.ext import CommandHandler, ContextTypes, filters
 from fsbot import admins, settings
 from fsbot.admins import admin_filter
 from fsbot.db import get_db
+from fsbot.ui import stats_text
 from fsbot.encode import decode
 from fsbot.utils import h
 
@@ -23,7 +24,7 @@ ADMIN_HELP = """🛠 <b>Admin commands</b>
 
 <b>Verification</b>
 /apis · /setapi &lt;1|2&gt; &lt;url&gt; &lt;key&gt; · /delapi &lt;1|2&gt; · /testapi &lt;1|2&gt;
-/settings · /set &lt;key&gt; &lt;value&gt;
+/set &lt;key&gt; &lt;value&gt; (power users; the panel does the same with buttons)
 
 <b>Messages (poster photo + text)</b>
 /setmsg &lt;welcome|fsub|verify|wait&gt; (reply) · /delphoto · /resetmsg · /previewmsg
@@ -32,37 +33,11 @@ ADMIN_HELP = """🛠 <b>Admin commands</b>
 /broadcast (reply) · /ban · /unban
 /addadmin &lt;id&gt; · /deladmin &lt;id&gt; · /admins (owners only)
 
-/admin — inline panel · /stats"""
-
-
-def settings_text() -> str:
-    lines = ["⚙️ <b>Settings</b>", ""]
-    for key, spec in settings.SPEC.items():
-        value = settings.get(key)
-        shown = int(value) if spec.kind == "bool" else f"{value:g}"
-        lines.append(f"<code>{key}</code> = <b>{shown}</b>\n   {spec.desc}")
-    lines += ["", "Change with <code>/set &lt;key&gt; &lt;value&gt;</code>"]
-    return "\n".join(lines)
-
-
-async def stats_text() -> str:
-    s = await get_db().stats()
-    return (
-        "📊 <b>Statistics</b>\n\n"
-        f"Users: <b>{s['users']}</b> (active {s['active']}, banned {s['banned']})\n"
-        f"Links: <b>{s['single'] + s['batch'] + s['custom']}</b> "
-        f"(single {s['single']}, batch {s['batch']}, custom {s['custom']})\n"
-        f"Force-sub channels: <b>{s['fsub']}</b>\n"
-        f"Files waiting for auto-delete: <b>{s['scheduled']}</b>"
-    )
+/settings (or /admin) — the full button panel · /stats"""
 
 
 async def adminhelp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.effective_message.reply_html(ADMIN_HELP)
-
-
-async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.effective_message.reply_html(settings_text())
 
 
 async def set_setting(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -156,7 +131,7 @@ async def revoke(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 def register(app) -> None:
     admin = admin_filter() & filters.ChatType.PRIVATE
     for name, fn in (
-        ("adminhelp", adminhelp), ("settings", show_settings), ("set", set_setting), ("stats", stats),
+        ("adminhelp", adminhelp), ("set", set_setting), ("stats", stats),
         ("ban", ban), ("unban", unban), ("addadmin", addadmin), ("deladmin", deladmin),
         ("admins", list_admins), ("revoke", revoke),
     ):
