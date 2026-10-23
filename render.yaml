@@ -18,4 +18,4 @@ services:
       - key: MONGO_URI
         sync: false
       - key: MONGO_DB_NAME
-        value: filestore
+        value: advanced_filestore

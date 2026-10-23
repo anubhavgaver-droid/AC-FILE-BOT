@@ -21,7 +21,7 @@ log = logging.getLogger("filestore")
 
 PUBLIC_COMMANDS = [BotCommand("start", "Start the bot"), BotCommand("help", "Help")]
 ADMIN_COMMANDS = PUBLIC_COMMANDS + [
-    BotCommand("admin", "Admin panel"),
+    BotCommand("settings", "Settings panel (all buttons)"),
     BotCommand("single", "Save one file → link"),
     BotCommand("batch", "Channel range → link"),
     BotCommand("custombatch", "Many files → one link"),
